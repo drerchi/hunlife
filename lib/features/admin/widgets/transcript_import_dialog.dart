@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,6 +65,46 @@ class _TranscriptImportDialogState extends ConsumerState<_TranscriptImportDialog
       _preview = TranscriptParser.parse(_controller.text);
       _message = _preview.isEmpty ? 'Не вдалося розпізнати субтитри.' : null;
     });
+  }
+
+  /// Load an .srt/.vtt/.txt subtitle file straight from disk.
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['srt', 'vtt', 'txt', 'sbv'],
+        withData: true, // needed on web, where there is no file path
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+
+      final bytes = file.bytes;
+      if (bytes == null) {
+        setState(() => _message = 'Не вдалося прочитати файл.');
+        return;
+      }
+
+      // Subtitle files are usually UTF-8; fall back to Latin-1 so a
+      // mis-encoded file still loads instead of throwing.
+      String text;
+      try {
+        text = utf8.decode(bytes);
+      } catch (_) {
+        text = latin1.decode(bytes);
+      }
+
+      _controller.text = text;
+      _parse();
+      if (!mounted) return;
+      setState(() {
+        _message = _preview.isEmpty
+            ? 'Файл "${file.name}" завантажено, але субтитри не розпізнано.'
+            : 'Файл "${file.name}": розпізнано ${_preview.length} рядків.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _message = 'Помилка читання файлу: $e');
+    }
   }
 
   Future<void> _tryAutoFetch() async {
@@ -142,6 +185,12 @@ class _TranscriptImportDialogState extends ConsumerState<_TranscriptImportDialog
                             width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.cloud_download_outlined),
                     label: const Text('Спробувати автоматично'),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Завантажити файл'),
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(

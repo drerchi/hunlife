@@ -19,6 +19,7 @@ dependencies:
   # so every learner hears the same correct voice. flutter_tts stays only as a
   # last-resort fallback when that audio can't be reached.
   audioplayers: ^6.1.0
+  file_picker: ^8.1.4
   flutter_tts: ^4.2.0
   http: ^1.2.2
   youtube_player_iframe: ^5.2.0
