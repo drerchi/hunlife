@@ -31,6 +31,28 @@
 
   <title>HunLife — Вивчай угорську</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Flutter's service worker kept serving a cached build after each deploy,
+    so fixes appeared not to land. The app is now built with
+    --pwa-strategy=none, but browsers that already registered the old worker
+    would go on using it forever, so clear it out once and reload.
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        if (!registrations.length) return;
+        Promise.all(registrations.map(function (r) { return r.unregister(); }))
+          .then(function () {
+            if (!window.caches) return null;
+            return caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            });
+          })
+          .then(function () { window.location.reload(); });
+      });
+    }
+  </script>
 </head>
 <body>
   <!--
