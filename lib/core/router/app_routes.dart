@@ -16,6 +16,7 @@ class AppRoutes {
   static const admin = '/admin';
   static const vocabulary = '/vocabulary';
   static const vocabularyStudy = '/vocabulary/study';
+  static const personalDetails = '/personal-details';
 
   static String topicDetail(String topicId) => '/topics/$topicId';
   static String topicFlashcards(String topicId) => '/topics/$topicId/flashcards';

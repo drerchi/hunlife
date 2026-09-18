@@ -38,11 +38,12 @@ function looksDepictable(term: string): boolean {
 }
 
 async function fromOpenverse(term: string): Promise<Picture | null> {
-  // Commercially usable licences only. HunLife sells timed access, so
-  // non-commercial (BY-NC) images would not be licensed for this use.
+  // CC0 and public-domain only. Those carry no attribution requirement, which
+  // is what lets the app show a clean picture with no credit line underneath.
+  // (BY / BY-SA images would legally have to be credited on screen.)
   const url =
     'https://api.openverse.org/v1/images/' +
-    `?q=${encodeURIComponent(term)}&page_size=3&license_type=commercial&mature=false`;
+    `?q=${encodeURIComponent(term)}&page_size=5&license=cc0,pdm&mature=false`;
 
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
   if (!res.ok) return null;
@@ -61,27 +62,6 @@ async function fromOpenverse(term: string): Promise<Picture | null> {
     license,
     sourceUrl: hit.foreign_landing_url ?? hit.url ?? null,
     provider: 'openverse',
-  };
-}
-
-async function fromWikipedia(term: string, lang: string): Promise<Picture | null> {
-  const res = await fetch(
-    `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`,
-    { headers: { 'User-Agent': UA } }
-  );
-  if (!res.ok) return null;
-
-  const json = await res.json();
-  const thumb = json?.thumbnail?.source;
-  if (!thumb) return null;
-
-  return {
-    imageUrl: json?.originalimage?.source ?? thumb,
-    thumbUrl: thumb,
-    attribution: 'Wikipedia',
-    license: 'CC BY-SA',
-    sourceUrl: json?.content_urls?.desktop?.page ?? null,
-    provider: 'wikipedia',
   };
 }
 
@@ -141,10 +121,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Look it up.
-    let picture = await fromOpenverse(searchTerm);
-    if (!picture && ukrainian) picture = await fromWikipedia(ukrainian, 'uk');
-    if (!picture) picture = await fromWikipedia(searchTerm, 'en');
+    // 3. Look it up, widening the search before giving up: the English gloss
+    //    finds the most images, but the other forms sometimes rescue a word.
+    const terms = [
+      searchTerm,
+      ...(ukrainian ? [ukrainian.trim()] : []),
+      key,
+      // Multi-word phrases rarely match; the first word usually does.
+      ...(searchTerm.includes(' ') ? [searchTerm.split(' ')[0]] : []),
+    ].filter((t, i, all) => t && looksDepictable(t) && all.indexOf(t) === i);
+
+    let picture: Picture | null = null;
+    for (const term of terms) {
+      picture = await fromOpenverse(term);
+      if (picture) break;
+    }
 
     if (!picture) {
       return new Response(JSON.stringify({ imageUrl: null, reason: 'no image found' }), {

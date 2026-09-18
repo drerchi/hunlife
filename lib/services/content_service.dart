@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/chapter.dart';
 import '../models/citizenship_question.dart';
 import '../models/flashcard.dart';
 import '../models/lesson.dart';
@@ -14,6 +15,31 @@ class ContentService {
   ContentService(this._client);
 
   final SupabaseClient _client;
+
+  // ---- Chapters -------------------------------------------------------------
+  Future<List<Chapter>> fetchChapters() async {
+    final rows = await _client.from('chapters').select().order('order_index', ascending: true);
+    return rows.map((e) => Chapter.fromJson(e)).toList();
+  }
+
+  Future<Chapter> createChapter(Chapter chapter) async {
+    final row = await _client.from('chapters').insert(chapter.toInsertJson()).select().single();
+    return Chapter.fromJson(row);
+  }
+
+  Future<Chapter> updateChapter(String id, Chapter chapter) async {
+    final row = await _client
+        .from('chapters')
+        .update(chapter.toInsertJson())
+        .eq('id', id)
+        .select()
+        .single();
+    return Chapter.fromJson(row);
+  }
+
+  Future<void> deleteChapter(String id) async {
+    await _client.from('chapters').delete().eq('id', id);
+  }
 
   // ---- Topics -------------------------------------------------------------
   Future<List<Topic>> fetchTopics() async {

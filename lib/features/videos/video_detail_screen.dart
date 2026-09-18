@@ -4,7 +4,9 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import '../../core/widgets/async_view.dart';
 import '../../models/video.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/video_providers.dart';
+import '../admin/widgets/transcript_import_dialog.dart';
 import 'widgets/word_lookup_sheet.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
@@ -158,10 +160,45 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
               ),
               data: (context, cues) {
                 if (cues.isEmpty) {
-                  return const EmptyState(
-                    message: 'Субтитри для цього відео поки недоступні.\n'
-                        'Відео можна дивитися, але натискання на слова недоступне.',
-                    icon: Icons.subtitles_off_outlined,
+                  final isAdmin =
+                      ref.watch(sessionProvider).valueOrNull?.profile?.isAdmin ?? false;
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.subtitles_off_outlined,
+                              size: 40, color: Theme.of(context).colorScheme.outline),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Субтитри для цього відео ще не додані.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          if (isAdmin) ...[
+                            const SizedBox(height: 20),
+                            FilledButton.icon(
+                              onPressed: () async {
+                                final saved =
+                                    await showTranscriptImportDialog(context, video);
+                                if (saved == true) {
+                                  ref.invalidate(transcriptProvider);
+                                }
+                              },
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text('Додати субтитри'),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Завантажте файл .srt/.vtt або вставте текст із YouTube',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   );
                 }
                 return StreamBuilder<YoutubeVideoState>(

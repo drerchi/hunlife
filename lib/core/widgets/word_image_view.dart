@@ -37,9 +37,12 @@ class WordImageView extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => _FallbackTile(word: wordHu, size: size),
       data: (picture) {
-        if (picture == null) return const SizedBox.shrink();
+        // CC0/public-domain images carry no attribution requirement, so the
+        // picture stands on its own. Words with no photo get a letter tile
+        // rather than an empty gap.
+        if (picture == null) return _FallbackTile(word: wordHu, size: size);
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -51,7 +54,7 @@ class WordImageView extends ConsumerWidget {
                 height: size,
                 width: size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                errorBuilder: (_, __, ___) => _FallbackTile(word: wordHu, size: size),
                 loadingBuilder: (context, child, progress) {
                   if (progress == null) return child;
                   return SizedBox(
@@ -71,22 +74,50 @@ class WordImageView extends ConsumerWidget {
                 },
               ),
             ),
-            if (picture.creditLine != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  picture.creditLine!,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                        fontSize: 10,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Shown when a word has no suitable photo — an initial on a tinted tile,
+/// so cards keep a consistent shape instead of jumping around.
+class _FallbackTile extends StatelessWidget {
+  const _FallbackTile({required this.word, required this.size});
+
+  final String word;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final letter = word.trim().isEmpty ? '?' : word.trim()[0].toUpperCase();
+
+    // Stable per word, so the same word always gets the same colour.
+    final palette = [
+      scheme.primaryContainer,
+      scheme.secondaryContainer,
+      scheme.tertiaryContainer,
+    ];
+    final background = palette[word.hashCode.abs() % palette.length];
+
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: size * 0.42,
+          fontWeight: FontWeight.w300,
+          color: scheme.onSecondaryContainer.withValues(alpha: 0.75),
+        ),
+      ),
     );
   }
 }

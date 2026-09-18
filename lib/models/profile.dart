@@ -9,6 +9,14 @@ class Profile {
   final DateTime? accessUntil;
   final DateTime createdAt;
 
+  /// Details the learner gives at the citizenship interview. Kept in Latin
+  /// script so the Hungarian answers stay pronounceable.
+  final String? firstName;
+  final String? lastName;
+  final DateTime? dateOfBirth;
+  final String? birthPlace;
+  final String? motherName;
+
   const Profile({
     required this.id,
     required this.email,
@@ -17,7 +25,24 @@ class Profile {
     required this.isBlocked,
     required this.accessUntil,
     required this.createdAt,
+    this.firstName,
+    this.lastName,
+    this.dateOfBirth,
+    this.birthPlace,
+    this.motherName,
   });
+
+  /// Hungarian puts the family name first: "Kovács Péter".
+  String? get hungarianName {
+    final parts = [lastName, firstName].where((p) => p != null && p.trim().isNotEmpty);
+    return parts.isEmpty ? null : parts.join(' ');
+  }
+
+  /// Whether there's enough detail to personalise the interview answers.
+  bool get hasInterviewDetails =>
+      (firstName?.trim().isNotEmpty ?? false) &&
+      (lastName?.trim().isNotEmpty ?? false) &&
+      dateOfBirth != null;
 
   bool get isAdmin => role == 'admin';
 
@@ -42,6 +67,13 @@ class Profile {
           ? null
           : DateTime.parse(json['access_until'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      dateOfBirth: json['date_of_birth'] == null
+          ? null
+          : DateTime.parse(json['date_of_birth'] as String),
+      birthPlace: json['birth_place'] as String?,
+      motherName: json['mother_name'] as String?,
     );
   }
 }

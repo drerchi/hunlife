@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/chapter.dart';
 import '../models/citizenship_question.dart';
 import '../models/flashcard.dart';
 import '../models/lesson.dart';
@@ -9,6 +10,10 @@ import '../models/topic.dart';
 import '../models/word_image.dart';
 import 'service_providers.dart';
 import 'session_provider.dart';
+
+final chaptersProvider = FutureProvider.autoDispose<List<Chapter>>((ref) async {
+  return ref.watch(contentServiceProvider).fetchChapters();
+});
 
 final topicsProvider = FutureProvider.autoDispose<List<Topic>>((ref) async {
   return ref.watch(contentServiceProvider).fetchTopics();

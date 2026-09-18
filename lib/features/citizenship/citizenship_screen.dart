@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../core/router/app_routes.dart';
+import '../../core/util/answer_personaliser.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/speak_button.dart';
 import '../../models/citizenship_question.dart';
 import '../../providers/content_providers.dart';
+import '../../providers/session_provider.dart';
 
 /// Interview-prep screen: every question a candidate could plausibly be
 /// asked at the Hungarian citizenship interview, grouped by category, with
@@ -51,6 +56,22 @@ class CitizenshipScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (!(ref.watch(sessionProvider).valueOrNull?.profile?.hasInterviewDetails ??
+                    false)) ...[
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Theme.of(context).colorScheme.tertiaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.badge_outlined),
+                      title: const Text('Додайте свої дані'),
+                      subtitle: const Text(
+                        'Щоб у відповідях були ваше ім\'я та дата народження',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push(AppRoutes.personalDetails),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 for (final entry in grouped.entries) ...[
                   Padding(
@@ -69,13 +90,19 @@ class CitizenshipScreen extends ConsumerWidget {
   }
 }
 
-class _QuestionTile extends StatelessWidget {
+class _QuestionTile extends ConsumerWidget {
   const _QuestionTile({required this.question});
 
   final CitizenshipQuestion question;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Answers are stored with tokens; fill in this learner's own details so
+    // they rehearse the answer they will actually give.
+    final profile = ref.watch(sessionProvider).valueOrNull?.profile;
+    final answerHu = AnswerPersonaliser.apply(question.answerHu, profile);
+    final answerUk = AnswerPersonaliser.apply(question.answerUk, profile);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
@@ -96,15 +123,15 @@ class _QuestionTile extends StatelessWidget {
           Row(
             children: [
               Text('Відповідь угорською:', style: Theme.of(context).textTheme.labelMedium),
-              SpeakButton(text: question.answerHu, size: 18),
+              SpeakButton(text: answerHu, size: 18),
             ],
           ),
           const SizedBox(height: 4),
-          Text(question.answerHu, style: Theme.of(context).textTheme.bodyLarge),
+          Text(answerHu, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 12),
           Text('Переклад українською:', style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 4),
-          Text(question.answerUk, style: Theme.of(context).textTheme.bodyMedium),
+          Text(answerUk, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

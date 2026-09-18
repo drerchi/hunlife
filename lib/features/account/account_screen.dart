@@ -65,6 +65,23 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 Card(
                   child: ListTile(
+                    leading: const Icon(Icons.badge_outlined),
+                    title: const Text('Мої дані для співбесіди'),
+                    subtitle: Text(
+                      profile.hasInterviewDetails
+                          ? '${profile.hungarianName}'
+                          : 'Додайте ім\'я та дату народження',
+                    ),
+                    trailing: profile.hasInterviewDetails
+                        ? const Icon(Icons.chevron_right)
+                        : Icon(Icons.error_outline,
+                            color: Theme.of(context).colorScheme.error),
+                    onTap: () => context.push(AppRoutes.personalDetails),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  child: ListTile(
                     leading: const Icon(Icons.bookmark_outline),
                     title: const Text('Мій словник'),
                     subtitle: const Text('Слова, збережені з відео'),

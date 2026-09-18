@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/account/account_screen.dart';
+import '../../features/account/personal_details_screen.dart';
 import '../../features/admin/admin_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
@@ -90,6 +91,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: AppRoutes.admin, builder: (context, state) => const AdminScreen()),
+      GoRoute(
+        path: AppRoutes.personalDetails,
+        builder: (context, state) => const PersonalDetailsScreen(),
+      ),
       GoRoute(
         path: AppRoutes.vocabulary,
         builder: (context, state) => const VocabularyScreen(),
