@@ -25,6 +25,7 @@ class ProfileService {
     DateTime? dateOfBirth,
     String? birthPlace,
     String? motherName,
+    String? fatherName,
   }) async {
     await _client.from('profiles').update({
       'first_name': firstName,
@@ -34,6 +35,7 @@ class ProfileService {
       'date_of_birth': dateOfBirth?.toIso8601String().split('T').first,
       'birth_place': birthPlace,
       'mother_name': motherName,
+      'father_name': fatherName,
     }).eq('id', userId);
   }
 }

@@ -106,7 +106,48 @@ class UkrainianDate {
     'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня',
   ];
 
+  static const List<String> _units = [
+    '', 'один', 'два', 'три', 'чотири', 'п\'ять',
+    'шість', 'сім', 'вісім', 'дев\'ять',
+  ];
+
+  static const List<String> _teens = [
+    'десять', 'одинадцять', 'дванадцять', 'тринадцять', 'чотирнадцять',
+    'п\'ятнадцять', 'шістнадцять', 'сімнадцять', 'вісімнадцять', 'дев\'ятнадцять',
+  ];
+
+  static const List<String> _tens = [
+    '', '', 'двадцять', 'тридцять', 'сорок', 'п\'ятдесят',
+    'шістдесят', 'сімдесят', 'вісімдесят', 'дев\'яносто',
+  ];
+
   static String spell(DateTime date) {
     return '${date.day} ${_monthsGenitive[date.month - 1]} ${date.year} року';
   }
+
+  static String spellNumber(int n) {
+    if (n < 0 || n > 99) return n.toString();
+    if (n < 10) return _units[n];
+    if (n < 20) return _teens[n - 10];
+    final unit = n % 10;
+    return unit == 0 ? _tens[n ~/ 10] : '${_tens[n ~/ 10]} ${_units[unit]}';
+  }
+
+  /// "рік / роки / років" — Ukrainian picks the form from the final digits.
+  static String yearsWord(int n) {
+    final lastTwo = n % 100;
+    if (lastTwo >= 11 && lastTwo <= 14) return 'років';
+    switch (n % 10) {
+      case 1:
+        return 'рік';
+      case 2:
+      case 3:
+      case 4:
+        return 'роки';
+      default:
+        return 'років';
+    }
+  }
+
+  static String spellAge(int years) => '${spellNumber(years)} ${yearsWord(years)}';
 }

@@ -29,8 +29,16 @@ class AnswerPersonaliser {
     final place = profile?.birthPlace?.trim() ?? '';
 
     final hungarianDate = birth == null ? _missingDate : HungarianDate.spell(birth);
+    final age = birth == null ? null : _ageOn(birth, DateTime.now());
 
     final replacements = <String, String>{
+      // Age is derived from the date of birth rather than stored, so it can
+      // never drift out of date — and a birthday updates it on its own.
+      '{{age_hu}}': age == null
+          ? '[вік]'
+          : '${HungarianDate.spellUnder100(age)} éves',
+      '{{age_uk}}': age == null ? '[вік]' : UkrainianDate.spellAge(age),
+      '{{age_number}}': age?.toString() ?? '[вік]',
       '{{name}}': fullName.isEmpty ? _missingName : fullName,
       '{{first_name}}': first.isEmpty ? _missingName : first,
       '{{last_name}}': last.isEmpty ? _missingName : last,
@@ -39,6 +47,12 @@ class AnswerPersonaliser {
       '{{birth_date_hu_capital}}': _capitalise(hungarianDate),
       '{{birth_date_uk}}': birth == null ? _missingDate : UkrainianDate.spell(birth),
       '{{birth_place}}': place.isEmpty ? _missingPlace : place,
+      '{{mother_name}}': (profile?.motherName?.trim().isNotEmpty ?? false)
+          ? profile!.motherName!.trim()
+          : '[ім\'я матері]',
+      '{{father_name}}': (profile?.fatherName?.trim().isNotEmpty ?? false)
+          ? profile!.fatherName!.trim()
+          : '[ім\'я батька]',
     };
 
     var result = text;
@@ -46,6 +60,16 @@ class AnswerPersonaliser {
       result = result.replaceAll(token, value);
     });
     return result;
+  }
+
+  /// Whole years completed, counting the birthday correctly rather than just
+  /// subtracting years.
+  static int _ageOn(DateTime birth, DateTime today) {
+    var years = today.year - birth.year;
+    final hadBirthday = today.month > birth.month ||
+        (today.month == birth.month && today.day >= birth.day);
+    if (!hadBirthday) years--;
+    return years < 0 ? 0 : years;
   }
 
   /// "Kovács Péter" -> "K-o-v-á-c-s P-é-t-e-r", for the "how do you spell

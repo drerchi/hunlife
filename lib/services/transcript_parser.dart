@@ -20,12 +20,41 @@ class TranscriptParser {
   // "0:05", "1:02:33" — optionally followed by the caption text on the same line.
   static final _plainTime = RegExp(r'^\[?(\d{1,2}):(\d{2})(?::(\d{2}))?\]?\s*(.*)$');
 
+  /// Some transcript exports prefix each line with an elapsed-time label
+  /// ("9 seconds", "1 minute"). That's duplicated by the timestamp column and
+  /// just clutters the caption, so strip it from the spoken text.
+  /// Leading punctuation is allowed because merged lines often arrive as
+  /// ", 9 secondsnem ..." rather than starting cleanly at the digit.
+  static final _elapsedLabel = RegExp(
+    r'^[\s,.;:\-–—]*\d+\s*(seconds?|secs?|minutes?|mins?|hours?|годин\w*|хвилин\w*|секунд\w*)\s*',
+    caseSensitive: false,
+  );
+
+  static String _stripElapsedLabel(String text) {
+    var out = text;
+    // The label can repeat when several source lines were merged into one cue.
+    for (var i = 0; i < 3; i++) {
+      final cleaned = out.replaceFirst(_elapsedLabel, '');
+      if (cleaned == out) break;
+      out = cleaned;
+    }
+    return out.trim();
+  }
+
   static List<TranscriptCue> parse(String input) {
     final text = input.replaceAll('\r\n', '\n').replaceAll('\r', '\n').trim();
     if (text.isEmpty) return [];
 
-    if (_srtVttTime.hasMatch(text)) return _parseSrtVtt(text);
-    return _parsePlain(text);
+    final cues = _srtVttTime.hasMatch(text) ? _parseSrtVtt(text) : _parsePlain(text);
+
+    return cues
+        .map((c) => TranscriptCue(
+              start: c.start,
+              duration: c.duration,
+              text: _stripElapsedLabel(c.text),
+            ))
+        .where((c) => c.text.isNotEmpty)
+        .toList();
   }
 
   static List<TranscriptCue> _parseSrtVtt(String text) {

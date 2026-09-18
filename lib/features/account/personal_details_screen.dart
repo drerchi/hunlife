@@ -21,6 +21,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _lastName = TextEditingController();
   final _birthPlace = TextEditingController();
   final _motherName = TextEditingController();
+  final _fatherName = TextEditingController();
   DateTime? _dateOfBirth;
 
   bool _loaded = false;
@@ -32,6 +33,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _lastName.dispose();
     _birthPlace.dispose();
     _motherName.dispose();
+    _fatherName.dispose();
     super.dispose();
   }
 
@@ -42,6 +44,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _lastName.text = profile.lastName ?? '';
     _birthPlace.text = profile.birthPlace ?? '';
     _motherName.text = profile.motherName ?? '';
+    _fatherName.text = profile.fatherName ?? '';
     _dateOfBirth = profile.dateOfBirth;
   }
 
@@ -71,6 +74,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             dateOfBirth: _dateOfBirth,
             birthPlace: _birthPlace.text.trim().isEmpty ? null : _birthPlace.text.trim(),
             motherName: _motherName.text.trim().isEmpty ? null : _motherName.text.trim(),
+            fatherName: _fatherName.text.trim().isEmpty ? null : _fatherName.text.trim(),
           );
       ref.invalidate(sessionProvider);
       if (!mounted) return;
@@ -186,6 +190,15 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Дівоче прізвище матері (необов\'язково)',
                       hintText: 'Szabó Mária',
+                      helperText: 'Латиницею — про це питають на співбесіді',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _fatherName,
+                    decoration: const InputDecoration(
+                      labelText: 'Ім\'я батька (необов\'язково)',
+                      hintText: 'Kovács István',
                     ),
                   ),
                   const SizedBox(height: 28),
