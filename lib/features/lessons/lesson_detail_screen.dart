@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/speak_button.dart';
+import '../../core/widgets/word_image_view.dart';
 import '../../models/lesson.dart';
 import '../../models/lesson_step.dart';
 import '../../providers/content_providers.dart';
@@ -224,6 +225,12 @@ class _PhraseStep extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
+                WordImageView(
+                  wordHu: step.textHu ?? '',
+                  ukrainian: step.textUk,
+                  size: 140,
+                ),
+                const SizedBox(height: 12),
                 Text(
                   step.textHu ?? '',
                   textAlign: TextAlign.center,

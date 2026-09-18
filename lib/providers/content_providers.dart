@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/citizenship_question.dart';
@@ -5,6 +6,7 @@ import '../models/flashcard.dart';
 import '../models/lesson.dart';
 import '../models/lesson_step.dart';
 import '../models/topic.dart';
+import '../models/word_image.dart';
 import 'service_providers.dart';
 import 'session_provider.dart';
 
@@ -28,6 +30,20 @@ final allLessonsProvider = FutureProvider.autoDispose<List<Lesson>>((ref) async 
 final lessonStepsProvider =
     FutureProvider.autoDispose.family<List<LessonStep>, String>((ref, lessonId) async {
   return ref.watch(contentServiceProvider).fetchLessonSteps(lessonId);
+});
+
+/// Picture for a word. Not autoDispose: images are looked up repeatedly while
+/// flipping through cards, and keeping them cached avoids re-fetching.
+final wordImageProvider =
+    FutureProvider.family<WordImage?, ({String word, String? ukrainian})>((ref, args) async {
+  try {
+    return await ref
+        .watch(wordImageServiceProvider)
+        .fetchImage(wordHu: args.word, ukrainian: args.ukrainian);
+  } catch (e) {
+    debugPrint('Word image lookup failed for ${args.word}: $e');
+    return null;
+  }
 });
 
 final allFlashcardsProvider = FutureProvider.autoDispose<List<Flashcard>>((ref) async {

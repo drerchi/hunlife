@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/speak_button.dart';
+import '../../core/widgets/word_image_view.dart';
 import '../../models/flashcard.dart';
 import '../../providers/content_providers.dart';
 import '../../providers/service_providers.dart';
@@ -76,6 +77,12 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              WordImageView(
+                                wordHu: card.frontHu,
+                                ukrainian: card.backUk,
+                                size: 150,
+                              ),
+                              const SizedBox(height: 14),
                               Text(
                                 _showBack ? card.backUk : card.frontHu,
                                 textAlign: TextAlign.center,

@@ -8,6 +8,7 @@ import '../services/profile_service.dart';
 import '../services/tts_service.dart';
 import '../services/video_service.dart';
 import '../services/vocabulary_service.dart';
+import '../services/word_image_service.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -35,6 +36,10 @@ final videoServiceProvider = Provider<VideoService>((ref) {
 
 final vocabularyServiceProvider = Provider<VocabularyService>((ref) {
   return VocabularyService(ref.watch(supabaseClientProvider));
+});
+
+final wordImageServiceProvider = Provider<WordImageService>((ref) {
+  return WordImageService(ref.watch(supabaseClientProvider));
 });
 
 /// Kept alive app-wide so generated audio URLs stay cached for the session.
