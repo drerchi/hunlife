@@ -79,9 +79,8 @@ class HomeScreen extends ConsumerWidget {
             if (profile != null && !profile.hasInterviewDetails) ...[
               const SizedBox(height: 16),
               Card(
-                color: Theme.of(context).colorScheme.tertiaryContainer,
                 child: ListTile(
-                  leading: const Icon(Icons.badge_outlined),
+                  leading: Icon(Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
                   title: const Text('Додайте свої дані'),
                   subtitle: const Text('Щоб відповіді на співбесіді були з вашим іменем'),
                   trailing: const Icon(Icons.chevron_right),

@@ -50,7 +50,6 @@ class CitizenshipScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
@@ -64,9 +63,8 @@ class CitizenshipScreen extends ConsumerWidget {
                     false)) ...[
                   const SizedBox(height: 12),
                   Card(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
                     child: ListTile(
-                      leading: const Icon(Icons.badge_outlined),
+                      leading: Icon(Icons.badge_outlined, color: Theme.of(context).colorScheme.primary),
                       title: const Text('Додайте свої дані'),
                       subtitle: const Text(
                         'Щоб у відповідях були ваше ім\'я та дата народження',

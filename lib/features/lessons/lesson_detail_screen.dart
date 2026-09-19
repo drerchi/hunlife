@@ -220,7 +220,9 @@ class _PhraseStep extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
         Card(
-          color: theme.colorScheme.primaryContainer,
+          // A plain surface, not a bold colour fill: with a picture and the
+          // word itself already carrying the content, a saturated background
+          // just added visual weight without adding information.
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -234,9 +236,7 @@ class _PhraseStep extends StatelessWidget {
                 Text(
                   step.textHu ?? '',
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+                  style: theme.textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 SpeakFab(text: step.textHu ?? ''),

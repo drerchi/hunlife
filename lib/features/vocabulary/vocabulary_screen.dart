@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/speak_button.dart';
+import '../../core/widgets/word_image_view.dart';
 import '../../providers/service_providers.dart';
 import '../../providers/video_providers.dart';
 
@@ -47,6 +48,11 @@ class VocabularyScreen extends ConsumerWidget {
                     final entry = entries[index];
                     return Card(
                       child: ListTile(
+                        leading: WordImageView(
+                          wordHu: entry.wordHu,
+                          ukrainian: entry.translationUk,
+                          size: 44,
+                        ),
                         title: Text(entry.wordHu,
                             style: const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: Column(
@@ -71,7 +77,15 @@ class VocabularyScreen extends ConsumerWidget {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SpeakButton(text: entry.wordHu),
+                            SpeakButton(
+                              // Read the saved answer/example too, not just the
+                              // word — for a saved citizenship question this is
+                              // the whole point: hearing the question and the
+                              // rehearsed answer together.
+                              text: entry.contextHu == null
+                                  ? entry.wordHu
+                                  : '${entry.wordHu} ${entry.contextHu}',
+                            ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
                               tooltip: 'Видалити',

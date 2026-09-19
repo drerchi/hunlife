@@ -136,15 +136,23 @@ const NOT_DEPICTABLE = new Set([
   'poor', 'clean', 'dirty', 'full', 'empty', 'correct', 'wrong', 'important',
   'interesting', 'boring', 'tired', 'happy', 'sad', 'angry', 'afraid',
   'hungry', 'thirsty', 'difficult', 'easy', 'similar', 'different',
+  // Politeness/discourse words: no picture means "sorry" or "you're welcome"
+  // any more than one means "the".
+  'bocsánat', 'elnézést', 'szívesen', 'köszönöm', 'kérem', 'tessék',
+  'sorry', 'excuse', 'welcome', 'please', 'thanks', 'thank',
 ]);
 
 /// Abstract words ("thank you", "because") have no sensible picture, and a
 /// wrong one is worse than none. Only look up things that can be depicted.
+/// Whole greetings and sentences ("Jó napot kívánok!", "Fáj a fejem") are the
+/// same problem at a larger scale — there is no picture *of* a sentence, so
+/// anything that reads as one (ends with ! or has more than two words) is
+/// treated the same way as a plain abstract word.
 function looksDepictable(term: string): boolean {
   const t = term.trim().toLowerCase();
   if (!t || t.length < 2) return false;
-  if (t.split(/\s+/).length > 3) return false;
-  if (t.endsWith('?')) return false;
+  if (t.split(/\s+/).length > 2) return false;
+  if (t.endsWith('?') || t.endsWith('!')) return false;
   if (NOT_DEPICTABLE.has(t)) return false;
   return true;
 }
@@ -314,9 +322,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1b. Some words are never depictable regardless of gloss (interrogatives,
-    // weekdays already in Hungarian form) — skip the gloss round-trip entirely.
-    if (!looksDepictable(key)) {
+    // 1b. Hungarian is agglutinative: a real single concept ("bankszámla",
+    // "gyógyszertár") is almost always written as one word. A *multi-word*
+    // Hungarian entry is therefore almost never a noun phrase — it is a
+    // greeting ("Jó napot kívánok!"), a full sentence ("Éhes vagyok"), or a
+    // conjugated verb construction ("fogunk menni") — and those returned
+    // some of the worst mismatches of all (a fitness glamour photo for "we
+    // will go"), because their English gloss can still look like an
+    // innocuous short phrase even though the Hungarian never meant a thing
+    // you could photograph. Skip the whole pipeline for these rather than
+    // trusting the gloss to catch it.
+    if (key.includes(' ') || !looksDepictable(key)) {
       await markNoImage(supabase, key);
       return new Response(JSON.stringify({ imageUrl: null, reason: 'not depictable' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
