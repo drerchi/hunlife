@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -116,6 +118,12 @@ class _QuestionTileState extends ConsumerState<_QuestionTile> {
           );
       ref.invalidate(savedWordsProvider);
       ref.invalidate(vocabularyProvider);
+      // Hearing both the question and the rehearsed answer right away is the
+      // point of saving it — read as one utterance so the answer isn't cut
+      // off by a second call restarting the player mid-question.
+      unawaited(
+        ref.read(ttsServiceProvider).speak('${widget.question.questionHu} $answerHu'),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

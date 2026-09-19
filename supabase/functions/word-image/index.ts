@@ -264,6 +264,14 @@ async function fetchGloss(word: string, from: string): Promise<string | null> {
   }
 }
 
+async function markNoImage(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  key: string
+): Promise<void> {
+  await supabase.from('word_images').upsert({ word: key, image_url: null, provider: 'none' });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -287,6 +295,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (cached) {
+      // A null image_url is a cached "no picture for this word" outcome
+      // (not depictable, or nothing found) — worth remembering just as much
+      // as a real picture, otherwise every learner who opens a question word
+      // or a weekday re-runs the same gloss lookup and Openverse search that
+      // already failed for everyone before them.
       return new Response(
         JSON.stringify({
           imageUrl: cached.image_url,
@@ -299,6 +312,15 @@ Deno.serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // 1b. Some words are never depictable regardless of gloss (interrogatives,
+    // weekdays already in Hungarian form) — skip the gloss round-trip entirely.
+    if (!looksDepictable(key)) {
+      await markNoImage(supabase, key);
+      return new Response(JSON.stringify({ imageUrl: null, reason: 'not depictable' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // 2. Pick the best search term. English gives by far the best image
@@ -347,6 +369,7 @@ Deno.serve(async (req) => {
     }
 
     if (!looksDepictable(searchTerm)) {
+      await markNoImage(supabase, key);
       return new Response(JSON.stringify({ imageUrl: null, reason: 'not depictable' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -396,6 +419,11 @@ Deno.serve(async (req) => {
     }
 
     if (!picture || !hostedUrl) {
+      // Only cache a true "Openverse has nothing" as a negative result. When
+      // Openverse *did* return candidates but they failed to download/upload
+      // (tried > 0), that's more likely a transient network hiccup than a
+      // permanent fact about the word, so leave it to retry next time.
+      if (tried === 0) await markNoImage(supabase, key);
       return new Response(
         JSON.stringify({
           imageUrl: null,
