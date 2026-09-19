@@ -26,7 +26,6 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
   int _index = 0;
   int? _selectedOption;
   bool _answered = false;
-  bool _revealed = false;
   int _correctCount = 0;
   bool _finished = false;
 
@@ -40,7 +39,6 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
     setState(() {
       _selectedOption = null;
       _answered = false;
-      _revealed = false;
       if (_index < total - 1) {
         _index++;
       } else {
@@ -53,7 +51,6 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
     setState(() {
       _selectedOption = null;
       _answered = false;
-      _revealed = false;
       if (_index > 0) _index--;
     });
   }
@@ -119,8 +116,6 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
                 index: _index,
                 selectedOption: _selectedOption,
                 answered: _answered,
-                revealed: _revealed,
-                onReveal: () => setState(() => _revealed = true),
                 onSelectOption: (i, correct) {
                   setState(() {
                     _selectedOption = i;
@@ -146,8 +141,6 @@ class _StepView extends StatelessWidget {
     required this.index,
     required this.selectedOption,
     required this.answered,
-    required this.revealed,
-    required this.onReveal,
     required this.onSelectOption,
     required this.onNext,
     required this.onBack,
@@ -158,8 +151,6 @@ class _StepView extends StatelessWidget {
   final int index;
   final int? selectedOption;
   final bool answered;
-  final bool revealed;
-  final VoidCallback onReveal;
   final void Function(int index, bool correct) onSelectOption;
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -194,8 +185,7 @@ class _StepView extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: switch (step.kind) {
-                  LessonStepKind.phrase =>
-                    _PhraseStep(step: step, revealed: revealed, onReveal: onReveal),
+                  LessonStepKind.phrase => _PhraseStep(step: step),
                   LessonStepKind.note => _NoteStep(step: step),
                   LessonStepKind.quiz => _QuizStep(
                       step: step,
@@ -231,11 +221,9 @@ class _StepView extends StatelessWidget {
 }
 
 class _PhraseStep extends StatelessWidget {
-  const _PhraseStep({required this.step, required this.revealed, required this.onReveal});
+  const _PhraseStep({required this.step});
 
   final LessonStep step;
-  final bool revealed;
-  final VoidCallback onReveal;
 
   @override
   Widget build(BuildContext context) {
@@ -270,32 +258,30 @@ class _PhraseStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        if (revealed) ...[
-          Text(step.textUk ?? '', textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
-          if (step.exampleHu != null) ...[
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(step.exampleHu!,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic)),
-                ),
-                SpeakButton(text: step.exampleHu!, size: 20),
-              ],
-            ),
-            if (step.exampleUk != null)
-              Text(step.exampleUk!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-          ],
-        ] else
-          OutlinedButton.icon(
-            onPressed: onReveal,
-            icon: const Icon(Icons.visibility_outlined),
-            label: const Text('Показати переклад'),
+        // Shown immediately rather than behind a reveal tap: this is a new
+        // word's first appearance, not a review, so there is nothing yet to
+        // test recall of — hiding the translation only added a click with no
+        // learning benefit. Flashcard study still uses tap-to-flip, where
+        // recall is the point.
+        Text(step.textUk ?? '', textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+        if (step.exampleHu != null) ...[
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(step.exampleHu!,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic)),
+              ),
+              SpeakButton(text: step.exampleHu!, size: 20),
+            ],
           ),
+          if (step.exampleUk != null)
+            Text(step.exampleUk!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+        ],
       ],
     );
   }

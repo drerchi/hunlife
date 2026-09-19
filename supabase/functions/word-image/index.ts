@@ -140,7 +140,45 @@ const NOT_DEPICTABLE = new Set([
   // any more than one means "the".
   'bocsánat', 'elnézést', 'szívesen', 'köszönöm', 'kérem', 'tessék',
   'sorry', 'excuse', 'welcome', 'please', 'thanks', 'thank',
+  // Numbers: a quantity has no picture either. Search for "öt" (five) and
+  // Openverse hands back whatever photo happened to get tagged "5" for some
+  // unrelated reason — a stock photo of a person, an old postcard, a
+  // building — because there is no way to photograph the number five itself,
+  // only five *of* something.
+  'nulla', 'egy', 'kettő', 'két', 'három', 'négy', 'öt', 'hat', 'hét',
+  'nyolc', 'kilenc', 'tíz', 'húsz', 'harminc', 'negyven', 'ötven', 'hatvan',
+  'hetven', 'nyolcvan', 'kilencven', 'száz', 'ezer', 'millió',
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
+  'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
+  'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty',
+  'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred',
+  'thousand', 'million',
 ]);
+
+// Hungarian numbers 11-99 are single, undivided words built by concatenating
+// a tens word with a unit ("tizenegy" = eleven, "huszonöt" = twenty-five,
+// "harminckettő" = thirty-two) — teens link with "tizen", twenties with
+// "huszon", everything above joins the unit directly onto the tens word.
+// Listing all ~90 of those by hand would be exactly the kind of list that
+// quietly goes stale; generating them from the same handful of roots above
+// can't miss one.
+{
+  const units = ['egy', 'kettő', 'három', 'négy', 'öt', 'hat', 'hét', 'nyolc', 'kilenc'];
+  const tensWithLinker: [string, string][] = [
+    ['tíz', 'tizen'],
+    ['húsz', 'huszon'],
+    ['harminc', 'harminc'],
+    ['negyven', 'negyven'],
+    ['ötven', 'ötven'],
+    ['hatvan', 'hatvan'],
+    ['hetven', 'hetven'],
+    ['nyolcvan', 'nyolcvan'],
+    ['kilencven', 'kilencven'],
+  ];
+  for (const [, linker] of tensWithLinker) {
+    for (const u of units) NOT_DEPICTABLE.add(linker + u);
+  }
+}
 
 /// Abstract words ("thank you", "because") have no sensible picture, and a
 /// wrong one is worse than none. Only look up things that can be depicted.
