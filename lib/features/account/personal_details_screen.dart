@@ -22,7 +22,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _birthPlace = TextEditingController();
   final _motherName = TextEditingController();
   final _fatherName = TextEditingController();
+  final _residence = TextEditingController();
   DateTime? _dateOfBirth;
+  DateTime? _motherDateOfBirth;
 
   bool _loaded = false;
   bool _saving = false;
@@ -34,6 +36,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _birthPlace.dispose();
     _motherName.dispose();
     _fatherName.dispose();
+    _residence.dispose();
     super.dispose();
   }
 
@@ -45,7 +48,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _birthPlace.text = profile.birthPlace ?? '';
     _motherName.text = profile.motherName ?? '';
     _fatherName.text = profile.fatherName ?? '';
+    _residence.text = profile.residence ?? '';
     _dateOfBirth = profile.dateOfBirth;
+    _motherDateOfBirth = profile.motherDateOfBirth;
   }
 
   Future<void> _pickDate() async {
@@ -75,6 +80,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             birthPlace: _birthPlace.text.trim().isEmpty ? null : _birthPlace.text.trim(),
             motherName: _motherName.text.trim().isEmpty ? null : _motherName.text.trim(),
             fatherName: _fatherName.text.trim().isEmpty ? null : _fatherName.text.trim(),
+            residence: _residence.text.trim().isEmpty ? null : _residence.text.trim(),
+            motherDateOfBirth: _motherDateOfBirth,
           );
       ref.invalidate(sessionProvider);
       if (!mounted) return;
@@ -199,6 +206,32 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Ім\'я батька (необов\'язково)',
                       hintText: 'Kovács István',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _motherDateOfBirth ?? DateTime(1970, 1, 1),
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                        helpText: 'Дата народження матері',
+                      );
+                      if (picked != null) setState(() => _motherDateOfBirth = picked);
+                    },
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: Text(_motherDateOfBirth == null
+                        ? 'Дата народження матері (необов\'язково)'
+                        : 'Мати: ${DateFormat('dd.MM.yyyy').format(_motherDateOfBirth!)}'),
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _residence,
+                    decoration: const InputDecoration(
+                      labelText: 'Де ви живете зараз',
+                      hintText: 'Budapesten',
+                      helperText: 'Так, як скажете в реченні: «Jelenleg ... lakom»',
                     ),
                   ),
                   const SizedBox(height: 28),

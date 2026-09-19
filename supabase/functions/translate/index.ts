@@ -47,7 +47,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Ask MyMemory. The optional `de` email raises the daily quota.
+    // 2. Translate.
+    //
+    // Google's endpoint is used first because its Hungarian→Ukrainian quality
+    // is markedly better: MyMemory returned "гарнітура" (headset) for "család"
+    // (family), "важкий" (heavy) for "erős" (strong) and "легкий" (light) for
+    // "gyenge" (weak) — wrong enough to teach the wrong word. MyMemory stays
+    // as a fallback so a lookup still works if Google is unreachable.
+    async function google(q: string, from: string, to: string): Promise<string | null> {
+      const url =
+        'https://translate.googleapis.com/translate_a/single?client=gtx' +
+        `&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(q)}`;
+
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (!res.ok) return null;
+
+      // Shape: [[["translated","source",...], ...], ...]
+      const json = await res.json();
+      const chunks = json?.[0];
+      if (!Array.isArray(chunks)) return null;
+
+      const text = chunks.map((c: Json) => c?.[0] ?? '').join('').trim();
+      return text.length ? text : null;
+    }
+
     const email = Deno.env.get('MYMEMORY_EMAIL');
 
     async function myMemory(q: string, pair: string): Promise<string | null> {
@@ -68,7 +91,18 @@ Deno.serve(async (req) => {
       return out;
     }
 
-    const translation = await myMemory(source, `${sourceLang}|${targetLang}`);
+    let via = 'google';
+    let googleError: string | null = null;
+
+    let translation = await google(source, sourceLang, targetLang).catch((e) => {
+      googleError = String(e instanceof Error ? e.message : e);
+      return null;
+    });
+
+    if (!translation) {
+      via = googleError == null ? 'mymemory (google empty)' : `mymemory (${googleError})`;
+      translation = await myMemory(source, `${sourceLang}|${targetLang}`);
+    }
     if (!translation) throw new Error('No translation returned');
 
     // Free hu->uk data is patchy, so we also return an English gloss as a
@@ -77,7 +111,8 @@ Deno.serve(async (req) => {
     let english: string | null = null;
     if (sourceLang === 'hu') {
       try {
-        english = await myMemory(source, 'hu|en');
+        english = (await google(source, 'hu', 'en').catch(() => null)) ??
+            (await myMemory(source, 'hu|en'));
       } catch (_) {
         english = null;
       }
@@ -92,7 +127,7 @@ Deno.serve(async (req) => {
       english_text: english,
     });
 
-    return new Response(JSON.stringify({ translation, english, cached: false }), {
+    return new Response(JSON.stringify({ translation, english, via, cached: false }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

@@ -18,6 +18,77 @@ const corsHeaders = {
 };
 
 const UA = 'HunLife/1.0 (Hungarian learning app)';
+const IMAGE_BUCKET = 'word-images';
+
+/// Copies the picture into our own storage and returns that URL.
+///
+/// Openverse serves images without an Access-Control-Allow-Origin header, and
+/// Flutter web loads images over XHR — so every picture failed in the browser
+/// and fell back to a placeholder tile, even though the URLs worked fine
+/// server-side. Re-hosting sidesteps CORS entirely and loads faster too.
+const mirrorErrors: string[] = [];
+
+async function mirrorToStorage(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  sourceUrl: string,
+  key: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(sourceUrl, { headers: { 'User-Agent': UA } });
+    if (!res.ok) {
+      mirrorErrors.push(`fetch ${res.status}`);
+      return null;
+    }
+
+    const contentType = res.headers.get('content-type') ?? 'image/jpeg';
+    if (!contentType.startsWith('image/')) {
+      mirrorErrors.push(`type ${contentType}`);
+      return null;
+    }
+
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length < 500 || bytes.length > 5_000_000) {
+      mirrorErrors.push(`size ${bytes.length}`);
+      return null;
+    }
+
+    const extension = contentType.includes('png')
+      ? 'png'
+      : contentType.includes('webp')
+        ? 'webp'
+        : contentType.includes('gif')
+          ? 'gif'
+          : 'jpg';
+
+    // Storage keys must be ASCII. Hungarian words are full of á/ö/ű, which is
+    // why words like "ház" silently failed to upload while "alma" worked — so
+    // hash the word instead of using it as the filename.
+    const path = `${await hashKey(key)}.${extension}`;
+
+    const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, bytes, {
+      contentType,
+      upsert: true,
+      cacheControl: '31536000',
+    });
+    if (error) {
+      mirrorErrors.push(`upload ${error.message ?? error}`);
+      return null;
+    }
+
+    return supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+  } catch (e) {
+    mirrorErrors.push(`threw ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+}
+
+async function hashKey(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 interface Picture {
   imageUrl: string;
@@ -143,7 +214,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Cache for everyone else.
+    // 4. Re-host it so the browser can actually load it.
+    //
+    // If mirroring fails we must NOT fall back to the original URL: Openverse
+    // sends no CORS header, so the browser would fail to load it and show a
+    // placeholder anyway. Better to try the other size, and otherwise report
+    // no image so the caller shows its own placeholder deliberately.
+    const candidates = [picture.thumbUrl, picture.imageUrl]
+      .filter((u): u is string => typeof u === 'string' && u.length > 0);
+
+    let hostedUrl: string | null = null;
+    for (const candidate of candidates) {
+      hostedUrl = await mirrorToStorage(supabase, candidate, key);
+      if (hostedUrl) break;
+    }
+
+    if (!hostedUrl) {
+      return new Response(
+        JSON.stringify({
+          imageUrl: null,
+          reason: 'could not host image',
+          detail: mirrorErrors.join('; '),
+          tried: candidates.length,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    picture = { ...picture, imageUrl: hostedUrl, thumbUrl: hostedUrl };
+
     await supabase.from('word_images').upsert({
       word: key,
       image_url: picture.imageUrl,

@@ -20,11 +20,41 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Вивчайте угорську мову українською — уроки, теми, картки та підготовка до співбесіди на громадянство.">
 
+  <!-- viewport-fit=cover lets the app paint into the notch / status-bar area.
+       Without it an installed web app leaves a blank strip there. -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- The status bar takes its colour from here. With no theme-color the
+       system falls back to white, which appeared as a bright band above the
+       dark app. Two tags so it follows the light/dark setting. -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF8FF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131318">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- translucent lets the page background continue behind the status bar -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HunLife">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <style>
+    /* The page itself has to be coloured too: the Flutter canvas does not
+       cover the safe areas, so an unstyled (white) body shows through there
+       as a band. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overscroll-behavior: none;
+      background-color: #FAF8FF;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html, body { background-color: #131318; }
+    }
+  </style>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>

@@ -18,6 +18,18 @@ class TopicsListScreen extends ConsumerWidget {
     final chapters = ref.watch(chaptersProvider);
     final topics = ref.watch(topicsProvider);
 
+    // Most topics hold a single lesson, and making the learner tap the topic
+    // and then the one lesson inside it is a wasted step — so jump straight in
+    // when there is nothing to choose between.
+    final lessons = ref.watch(allLessonsProvider).valueOrNull ?? const [];
+    final soleLessonByTopic = <String, String>{};
+    final lessonCounts = <String, int>{};
+    for (final lesson in lessons) {
+      lessonCounts[lesson.topicId] = (lessonCounts[lesson.topicId] ?? 0) + 1;
+      soleLessonByTopic[lesson.topicId] = lesson.id;
+    }
+    soleLessonByTopic.removeWhere((topicId, _) => (lessonCounts[topicId] ?? 0) != 1);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Навчання')),
       body: RefreshIndicator(
@@ -52,6 +64,7 @@ class TopicsListScreen extends ConsumerWidget {
                             .where((t) => t.chapterId == chapterList[i].id)
                             .toList(),
                         initiallyExpanded: i == 0,
+                        soleLessonByTopic: soleLessonByTopic,
                       ),
                     if (unassigned.isNotEmpty)
                       _ChapterCard(
@@ -59,6 +72,7 @@ class TopicsListScreen extends ConsumerWidget {
                         number: chapterList.length + 1,
                         topics: unassigned,
                         initiallyExpanded: chapterList.isEmpty,
+                        soleLessonByTopic: soleLessonByTopic,
                       ),
                   ],
                 );
@@ -77,6 +91,7 @@ class _ChapterCard extends StatelessWidget {
     required this.number,
     required this.topics,
     required this.initiallyExpanded,
+    required this.soleLessonByTopic,
   });
 
   final Chapter? chapter;
@@ -84,9 +99,25 @@ class _ChapterCard extends StatelessWidget {
   final List<Topic> topics;
   final bool initiallyExpanded;
 
+  /// topicId -> its only lesson, for topics that have exactly one.
+  final Map<String, String> soleLessonByTopic;
+
+  /// One colour per chapter so the course reads as a sequence of distinct
+  /// sections rather than a stack of identical cards.
+  static const List<Color> _chapterColors = [
+    Color(0xFF1A73E8), // blue
+    Color(0xFF2E9E5B), // green
+    Color(0xFFE8710A), // orange
+    Color(0xFF7B4FBF), // purple
+    Color(0xFF00897B), // teal
+    Color(0xFFD93025), // red
+    Color(0xFF5E7BC4), // indigo
+    Color(0xFFB8860B), // gold
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final accent = _chapterColors[(number - 1) % _chapterColors.length];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -97,14 +128,13 @@ class _ChapterCard extends StatelessWidget {
           initiallyExpanded: initiallyExpanded,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           childrenPadding: const EdgeInsets.only(bottom: 8),
+          collapsedIconColor: accent,
+          iconColor: accent,
           leading: CircleAvatar(
-            backgroundColor: scheme.primaryContainer,
+            backgroundColor: accent.withValues(alpha: 0.16),
             child: Text(
               '$number',
-              style: TextStyle(
-                color: scheme.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: accent, fontWeight: FontWeight.w700),
             ),
           ),
           title: Text(
@@ -126,11 +156,16 @@ class _ChapterCard extends StatelessWidget {
               for (final topic in topics)
                 ListTile(
                   contentPadding: const EdgeInsets.only(left: 28, right: 12),
-                  leading: Icon(Icons.play_circle_outline, color: scheme.primary),
+                  leading: Icon(Icons.play_circle_fill, color: accent),
                   title: Text(topic.titleUk),
                   subtitle: topic.titleHu == null ? null : Text(topic.titleHu!),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(AppRoutes.topicDetail(topic.id)),
+                  onTap: () {
+                    final soleLesson = soleLessonByTopic[topic.id];
+                    context.push(soleLesson != null
+                        ? AppRoutes.lessonDetail(soleLesson)
+                        : AppRoutes.topicDetail(topic.id));
+                  },
                 ),
           ],
         ),

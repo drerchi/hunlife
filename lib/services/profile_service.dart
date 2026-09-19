@@ -26,6 +26,9 @@ class ProfileService {
     String? birthPlace,
     String? motherName,
     String? fatherName,
+    String? residence,
+    int? inHungarySince,
+    DateTime? motherDateOfBirth,
   }) async {
     await _client.from('profiles').update({
       'first_name': firstName,
@@ -36,6 +39,9 @@ class ProfileService {
       'birth_place': birthPlace,
       'mother_name': motherName,
       'father_name': fatherName,
+      'residence': residence,
+      'in_hungary_since': inHungarySince,
+      'mother_date_of_birth': motherDateOfBirth?.toIso8601String().split('T').first,
     }).eq('id', userId);
   }
 }

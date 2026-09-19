@@ -76,4 +76,28 @@ class AdminService {
   Future<void> setRole({required String userId, required String role}) async {
     await _client.from('profiles').update({'role': role}).eq('id', userId);
   }
+
+  /// Creates a learner account directly, with access already granted.
+  ///
+  /// Goes through an edge function because creating a user needs the
+  /// service_role key, which must never be shipped in the app. The function
+  /// re-checks that the caller is an admin before doing anything.
+  Future<void> createUser({
+    required String email,
+    required String password,
+    String? fullName,
+    DateTime? accessUntil,
+  }) async {
+    final response = await _client.functions.invoke('admin-create-user', body: {
+      'email': email.trim(),
+      'password': password,
+      if (fullName != null && fullName.trim().isNotEmpty) 'fullName': fullName.trim(),
+      'accessUntil': accessUntil?.toIso8601String(),
+    });
+
+    final data = response.data;
+    if (data is Map && data['error'] != null) {
+      throw Exception(data['error']);
+    }
+  }
 }

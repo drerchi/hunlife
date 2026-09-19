@@ -69,7 +69,7 @@ class _WordLookupSheetState extends ConsumerState<_WordLookupSheet> {
 
   Future<void> _lookup() async {
     try {
-      final result = await ref.read(videoServiceProvider).translate(widget.word);
+      final result = await ref.read(translationServiceProvider).translate(widget.word);
       if (!mounted) return;
       setState(() {
         _translationController.text = result.translation;

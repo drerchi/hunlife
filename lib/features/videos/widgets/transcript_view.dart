@@ -112,13 +112,10 @@ class _TranscriptViewState extends ConsumerState<TranscriptView> {
         return ValueListenableBuilder<int>(
           valueListenable: _activeIndex,
           builder: (context, active, _) {
-            final isActive = index == active;
             return _CueRow(
               cue: widget.cues[index],
-              isActive: isActive,
+              isActive: index == active,
               savedWords: saved,
-              // Only the active line needs word-level timing.
-              positionSeconds: isActive ? widget.positionSeconds : null,
               onWordTap: widget.onWordTap,
               onSeek: widget.onSeek,
             );
@@ -134,7 +131,6 @@ class _CueRow extends StatelessWidget {
     required this.cue,
     required this.isActive,
     required this.savedWords,
-    required this.positionSeconds,
     required this.onWordTap,
     required this.onSeek,
   });
@@ -142,7 +138,6 @@ class _CueRow extends StatelessWidget {
   final TranscriptCue cue;
   final bool isActive;
   final Set<String> savedWords;
-  final ValueListenable<double>? positionSeconds;
   final void Function(String word, TranscriptCue cue) onWordTap;
   final void Function(TranscriptCue cue) onSeek;
 
@@ -184,50 +179,19 @@ class _CueRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: positionSeconds == null
-                ? _WordWrap(
-                    words: words,
-                    cue: cue,
-                    savedWords: savedWords,
-                    isActiveLine: isActive,
-                    spokenWordIndex: -1,
-                    onWordTap: onWordTap,
-                  )
-                : ValueListenableBuilder<double>(
-                    valueListenable: positionSeconds!,
-                    builder: (context, seconds, _) => _WordWrap(
-                      words: words,
-                      cue: cue,
-                      savedWords: savedWords,
-                      isActiveLine: true,
-                      spokenWordIndex: _spokenWordIndex(cue, words, seconds),
-                      onWordTap: onWordTap,
-                    ),
-                  ),
+            child: _WordWrap(
+              words: words,
+              cue: cue,
+              savedWords: savedWords,
+              isActiveLine: isActive,
+              onWordTap: onWordTap,
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Uploaded subtitles only carry per-line timings, so word timing is
-  /// estimated: each word gets a slice of the line's duration proportional to
-  /// its length. Close enough to follow along by eye.
-  static int _spokenWordIndex(TranscriptCue cue, List<String> words, double seconds) {
-    if (words.isEmpty || cue.duration <= 0) return -1;
-    if (seconds < cue.start) return -1;
-
-    final totalChars = words.fold<int>(0, (sum, w) => sum + w.length);
-    if (totalChars == 0) return -1;
-
-    var elapsed = cue.start;
-    for (var i = 0; i < words.length; i++) {
-      final share = cue.duration * (words[i].length / totalChars);
-      if (seconds < elapsed + share) return i;
-      elapsed += share;
-    }
-    return words.length - 1;
-  }
 }
 
 class _WordWrap extends StatelessWidget {
@@ -236,7 +200,6 @@ class _WordWrap extends StatelessWidget {
     required this.cue,
     required this.savedWords,
     required this.isActiveLine,
-    required this.spokenWordIndex,
     required this.onWordTap,
   });
 
@@ -244,7 +207,6 @@ class _WordWrap extends StatelessWidget {
   final TranscriptCue cue;
   final Set<String> savedWords;
   final bool isActiveLine;
-  final int spokenWordIndex;
   final void Function(String word, TranscriptCue cue) onWordTap;
 
   @override
@@ -255,14 +217,13 @@ class _WordWrap extends StatelessWidget {
       spacing: 2,
       runSpacing: 2,
       children: [
-        for (var i = 0; i < words.length; i++)
+        for (final word in words)
           _WordChip(
-            word: words[i],
-            isSaved: savedWords.contains(normaliseWord(words[i])),
+            word: word,
+            isSaved: savedWords.contains(normaliseWord(word)),
             isActiveLine: isActiveLine,
-            isSpoken: i == spokenWordIndex,
             scheme: scheme,
-            onTap: () => onWordTap(words[i], cue),
+            onTap: () => onWordTap(word, cue),
           ),
       ],
     );
@@ -274,7 +235,6 @@ class _WordChip extends StatefulWidget {
     required this.word,
     required this.isSaved,
     required this.isActiveLine,
-    required this.isSpoken,
     required this.scheme,
     required this.onTap,
   });
@@ -282,7 +242,6 @@ class _WordChip extends StatefulWidget {
   final String word;
   final bool isSaved;
   final bool isActiveLine;
-  final bool isSpoken;
   final ColorScheme scheme;
   final VoidCallback onTap;
 
@@ -298,15 +257,11 @@ class _WordChipState extends State<_WordChip> {
     final scheme = widget.scheme;
     final tappable = normaliseWord(widget.word).isNotEmpty;
 
-    // Hovering shouldn't fight the spoken-word highlight, so it only shows
-    // when that word isn't currently being read out.
-    final showHover = _hovering && tappable && !widget.isSpoken;
-
-    final Color? background = widget.isSpoken
-        ? scheme.primary
-        : showHover
-            ? scheme.primary.withValues(alpha: 0.18)
-            : null;
+    // Only the current line is highlighted; marking each spoken word as well
+    // turned out to be more distracting than helpful when reading along.
+    final showHover = _hovering && tappable;
+    final Color? background =
+        showHover ? scheme.primary.withValues(alpha: 0.18) : null;
 
     return MouseRegion(
       cursor: tappable ? SystemMouseCursors.click : MouseCursor.defer,
@@ -330,11 +285,7 @@ class _WordChipState extends State<_WordChip> {
               fontSize: 16,
               height: 1.5,
               fontWeight: widget.isActiveLine ? FontWeight.w600 : FontWeight.normal,
-              color: widget.isSpoken
-                  ? scheme.onPrimary
-                  : widget.isActiveLine
-                      ? scheme.onPrimaryContainer
-                      : scheme.onSurface,
+              color: widget.isActiveLine ? scheme.onPrimaryContainer : scheme.onSurface,
             ),
           ),
         ),

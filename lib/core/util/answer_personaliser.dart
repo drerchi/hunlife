@@ -13,46 +13,59 @@ import 'hungarian_date.dart';
 class AnswerPersonaliser {
   const AnswerPersonaliser._();
 
-  /// Shown when a detail hasn't been filled in yet, so the sentence still
-  /// reads sensibly and the gap is obvious.
-  static const _missingName = '[ваше ім\'я]';
-  static const _missingDate = '[ваша дата народження]';
-  static const _missingPlace = '[місце народження]';
+  /// Details the learner hasn't filled in yet fall back to a plausible
+  /// example rather than a bracketed gap, so the answer still reads as a
+  /// complete Hungarian sentence they can practise saying. The account screen
+  /// prompts them to replace these with their own details.
+  static const _exampleName = 'Kovács Péter';
+  static const _examplePlace = 'Ungváron';
+  static const _exampleResidence = 'Budapesten';
+  static const _exampleSince = 2018;
+  static final DateTime _exampleBirth = DateTime(1995, 6, 15);
+  static final DateTime _exampleMotherBirth = DateTime(1970, 4, 9);
+  static const _exampleMother = 'Szabó Mária';
+  static const _exampleFather = 'Kovács István';
 
   static String apply(String text, Profile? profile) {
     if (!text.contains('{{')) return text;
 
-    final first = profile?.firstName?.trim() ?? '';
-    final last = profile?.lastName?.trim() ?? '';
-    final fullName = profile?.hungarianName ?? '';
-    final birth = profile?.dateOfBirth;
-    final place = profile?.birthPlace?.trim() ?? '';
+    String orExample(String? value, String example) {
+      final trimmed = value?.trim() ?? '';
+      return trimmed.isEmpty ? example : trimmed;
+    }
 
-    final hungarianDate = birth == null ? _missingDate : HungarianDate.spell(birth);
-    final age = birth == null ? null : _ageOn(birth, DateTime.now());
+    final fullName = orExample(profile?.hungarianName, _exampleName);
+    final first = orExample(profile?.firstName, _exampleName.split(' ').last);
+    final last = orExample(profile?.lastName, _exampleName.split(' ').first);
+
+    final birth = profile?.dateOfBirth ?? _exampleBirth;
+    final motherBirth = profile?.motherDateOfBirth ?? _exampleMotherBirth;
+    final since = profile?.inHungarySince ?? _exampleSince;
+
+    final hungarianDate = HungarianDate.spell(birth);
+    final age = _ageOn(birth, DateTime.now());
 
     final replacements = <String, String>{
       // Age is derived from the date of birth rather than stored, so it can
       // never drift out of date — and a birthday updates it on its own.
-      '{{age_hu}}': age == null
-          ? '[вік]'
-          : '${HungarianDate.spellUnder100(age)} éves',
-      '{{age_uk}}': age == null ? '[вік]' : UkrainianDate.spellAge(age),
-      '{{age_number}}': age?.toString() ?? '[вік]',
-      '{{name}}': fullName.isEmpty ? _missingName : fullName,
-      '{{first_name}}': first.isEmpty ? _missingName : first,
-      '{{last_name}}': last.isEmpty ? _missingName : last,
-      '{{name_spelled}}': fullName.isEmpty ? _missingName : _spellOut(fullName),
+      '{{age_hu}}': '${HungarianDate.spellUnder100(age)} éves',
+      '{{age_uk}}': UkrainianDate.spellAge(age),
+      '{{age_number}}': age.toString(),
+      '{{name}}': fullName,
+      '{{first_name}}': first,
+      '{{last_name}}': last,
+      '{{name_spelled}}': _spellOut(fullName),
       '{{birth_date_hu}}': hungarianDate,
       '{{birth_date_hu_capital}}': _capitalise(hungarianDate),
-      '{{birth_date_uk}}': birth == null ? _missingDate : UkrainianDate.spell(birth),
-      '{{birth_place}}': place.isEmpty ? _missingPlace : place,
-      '{{mother_name}}': (profile?.motherName?.trim().isNotEmpty ?? false)
-          ? profile!.motherName!.trim()
-          : '[ім\'я матері]',
-      '{{father_name}}': (profile?.fatherName?.trim().isNotEmpty ?? false)
-          ? profile!.fatherName!.trim()
-          : '[ім\'я батька]',
+      '{{birth_date_uk}}': UkrainianDate.spell(birth),
+      '{{birth_place}}': orExample(profile?.birthPlace, _examplePlace),
+      '{{mother_name}}': orExample(profile?.motherName, _exampleMother),
+      '{{father_name}}': orExample(profile?.fatherName, _exampleFather),
+      '{{residence}}': orExample(profile?.residence, _exampleResidence),
+      '{{in_hungary_since}}': since.toString(),
+      '{{in_hungary_since_hu}}': HungarianDate.spellYear(since),
+      '{{mother_birth_hu}}': HungarianDate.spell(motherBirth),
+      '{{mother_birth_uk}}': UkrainianDate.spell(motherBirth),
     };
 
     var result = text;

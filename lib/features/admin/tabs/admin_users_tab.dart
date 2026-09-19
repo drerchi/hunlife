@@ -7,6 +7,7 @@ import '../../../models/profile.dart';
 import '../../../providers/admin_providers.dart';
 import '../../../providers/service_providers.dart';
 import '../../../providers/session_provider.dart';
+import '../widgets/create_user_dialog.dart';
 import '../widgets/user_access_dialog.dart';
 
 class AdminUsersTab extends ConsumerWidget {
@@ -17,6 +18,35 @@ class AdminUsersTab extends ConsumerWidget {
     final users = ref.watch(adminUsersProvider);
     final myId = ref.watch(sessionProvider).valueOrNull?.profile?.id;
 
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final created = await showCreateUserDialog(context);
+          if (created != true) return;
+          ref.invalidate(adminUsersProvider);
+          ref.invalidate(adminStatsProvider);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Користувача створено.')),
+            );
+          }
+        },
+        icon: const Icon(Icons.person_add_alt),
+        label: const Text('Створити'),
+      ),
+      body: _UsersList(users: users, myId: myId),
+    );
+  }
+}
+
+class _UsersList extends ConsumerWidget {
+  const _UsersList({required this.users, required this.myId});
+
+  final AsyncValue<List<Profile>> users;
+  final String? myId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         Padding(

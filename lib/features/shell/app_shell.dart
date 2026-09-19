@@ -26,8 +26,10 @@ class AppShell extends StatelessWidget {
               icon: Icon(Icons.smart_display_outlined),
               selectedIcon: Icon(Icons.smart_display),
               label: 'Відео'),
+          // "Громадянство" is too wide for a fifth of a phone screen and got
+          // clipped; the screen itself still says "Підготовка до співбесіди".
           NavigationDestination(
-              icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Громадянство'),
+              icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Співбесіда'),
           NavigationDestination(
               icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Профіль'),
         ],

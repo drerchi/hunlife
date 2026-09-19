@@ -17,6 +17,9 @@ class Profile {
   final String? birthPlace;
   final String? motherName;
   final String? fatherName;
+  final String? residence;
+  final int? inHungarySince;
+  final DateTime? motherDateOfBirth;
 
   const Profile({
     required this.id,
@@ -32,6 +35,9 @@ class Profile {
     this.birthPlace,
     this.motherName,
     this.fatherName,
+    this.residence,
+    this.inHungarySince,
+    this.motherDateOfBirth,
   });
 
   /// Hungarian puts the family name first: "Kovács Péter".
@@ -77,6 +83,11 @@ class Profile {
       birthPlace: json['birth_place'] as String?,
       motherName: json['mother_name'] as String?,
       fatherName: json['father_name'] as String?,
+      residence: json['residence'] as String?,
+      inHungarySince: json['in_hungary_since'] as int?,
+      motherDateOfBirth: json['mother_date_of_birth'] == null
+          ? null
+          : DateTime.parse(json['mother_date_of_birth'] as String),
     );
   }
 }
