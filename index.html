@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/hunlife/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Вивчайте угорську мову українською — уроки, теми, картки та підготовка до співбесіди на громадянство.">
+
+  <!-- viewport-fit=cover lets the app paint into the notch / status-bar area.
+       Without it an installed web app leaves a blank strip there. -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- The status bar takes its colour from here. With no theme-color the
+       system falls back to white, which appeared as a bright band above the
+       dark app. Two tags so it follows the light/dark setting. -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF8FF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131318">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- translucent lets the page background continue behind the status bar -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HunLife">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <style>
+    /* The page itself has to be coloured too: the Flutter canvas does not
+       cover the safe areas, so an unstyled (white) body shows through there
+       as a band. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overscroll-behavior: none;
+      background-color: #FAF8FF;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html, body { background-color: #131318; }
+    }
+  </style>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>HunLife — Вивчай угорську</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!--
+    Flutter's service worker kept serving a cached build after each deploy,
+    so fixes appeared not to land. The app is now built with
+    --pwa-strategy=none, but browsers that already registered the old worker
+    would go on using it forever, so clear it out once and reload.
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        if (!registrations.length) return;
+        Promise.all(registrations.map(function (r) { return r.unregister(); }))
+          .then(function () {
+            if (!window.caches) return null;
+            return caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            });
+          })
+          .then(function () { window.location.reload(); });
+      });
+    }
+  </script>
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
