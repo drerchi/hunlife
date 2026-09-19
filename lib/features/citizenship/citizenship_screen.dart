@@ -9,7 +9,9 @@ import '../../core/widgets/async_view.dart';
 import '../../core/widgets/speak_button.dart';
 import '../../models/citizenship_question.dart';
 import '../../providers/content_providers.dart';
+import '../../providers/service_providers.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/video_providers.dart';
 
 /// Interview-prep screen: every question a candidate could plausibly be
 /// asked at the Hungarian citizenship interview, grouped by category, with
@@ -90,18 +92,51 @@ class CitizenshipScreen extends ConsumerWidget {
   }
 }
 
-class _QuestionTile extends ConsumerWidget {
+class _QuestionTile extends ConsumerStatefulWidget {
   const _QuestionTile({required this.question});
 
   final CitizenshipQuestion question;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_QuestionTile> createState() => _QuestionTileState();
+}
+
+class _QuestionTileState extends ConsumerState<_QuestionTile> {
+  bool _saving = false;
+
+  Future<void> _save(String? userId, String answerHu) async {
+    if (userId == null || _saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(vocabularyServiceProvider).save(
+            userId: userId,
+            wordHu: widget.question.questionHu,
+            translationUk: widget.question.questionUk,
+            contextHu: answerHu,
+          );
+      ref.invalidate(savedWordsProvider);
+      ref.invalidate(vocabularyProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не вдалося зберегти питання.')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final question = widget.question;
     // Answers are stored with tokens; fill in this learner's own details so
     // they rehearse the answer they will actually give.
     final profile = ref.watch(sessionProvider).valueOrNull?.profile;
     final answerHu = AnswerPersonaliser.apply(question.answerHu, profile);
     final answerUk = AnswerPersonaliser.apply(question.answerUk, profile);
+
+    final savedWords = ref.watch(savedWordsProvider).valueOrNull ?? const <String>{};
+    final isSaved = savedWords.contains(question.questionHu);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -132,6 +167,20 @@ class _QuestionTile extends ConsumerWidget {
           Text('Переклад українською:', style: Theme.of(context).textTheme.labelMedium),
           const SizedBox(height: 4),
           Text(answerUk, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: (isSaved || _saving || profile == null)
+                  ? null
+                  : () => _save(profile.id, answerHu),
+              icon: _saving
+                  ? const SizedBox(
+                      width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(isSaved ? Icons.bookmark_added : Icons.bookmark_add_outlined),
+              label: Text(isSaved ? 'У словнику' : 'Зберегти у словник'),
+            ),
+          ),
         ],
       ),
     );
