@@ -30,6 +30,12 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
   int _correctCount = 0;
   bool _finished = false;
 
+  // Tracks which step index has already been read aloud, so entering a step
+  // — including the very first one — speaks its word immediately instead of
+  // waiting for the learner to tap "Прослухати" themselves, but re-entering
+  // the same step from a rebuild doesn't restart the audio mid-listen.
+  int? _lastSpokenIndex;
+
   void _next(int total) {
     setState(() {
       _selectedOption = null;
@@ -49,6 +55,23 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
       _answered = false;
       _revealed = false;
       if (_index > 0) _index--;
+    });
+  }
+
+  void _autoSpeak(List<LessonStep> steps, int index) {
+    if (index < 0 || index >= steps.length) return;
+    if (_lastSpokenIndex == index) return;
+    _lastSpokenIndex = index;
+
+    final step = steps[index];
+    // The prompt to pronounce, not a translation or a quiz question — quiz
+    // options are speakable on demand but shouldn't blurt the term before
+    // the learner has had a chance to answer.
+    final text = step.kind == LessonStepKind.quiz ? null : step.textHu;
+    if (text == null || text.trim().isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(ttsServiceProvider).speak(text);
     });
   }
 
@@ -84,10 +107,12 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
                     _index = 0;
                     _finished = false;
                     _correctCount = 0;
+                    _lastSpokenIndex = null;
                   }),
                   onComplete: _complete,
                 );
               }
+              _autoSpeak(stepList, _index);
               return _StepView(
                 lesson: l,
                 steps: stepList,

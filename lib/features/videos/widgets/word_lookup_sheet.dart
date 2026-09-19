@@ -97,7 +97,11 @@ class _WordLookupSheetState extends ConsumerState<_WordLookupSheet> {
             userId: profile.id,
             wordHu: widget.word,
             translationUk: translation,
-            contextHu: widget.contextLine,
+            // Not the subtitle cue: auto-generated captions often run several
+            // spoken lines together into one long, garbled cue with no
+            // punctuation, which reads as nonsense once it's just sitting
+            // under a single saved word with no video context to make sense
+            // of it.
             videoId: widget.videoId,
           );
       ref.invalidate(savedWordsProvider);
